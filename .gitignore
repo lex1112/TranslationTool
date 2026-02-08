@@ -1,0 +1,11 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs/TranslationTool.slnx/FileContentIndex
+/.vs
+/backend/Properties
+/presentation/.vs/phptasks.json
+/presentation/.vs/launch.json
+/presentation/storage
+/presentation/database
