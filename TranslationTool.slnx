@@ -5,4 +5,8 @@
   <Folder Name="/presentation/">
     <Project Path="presentation/Translation.Presentation.phpproj" Type="13b669be-bb05-4ddf-9536-439f39a36129" />
   </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path="launch.sh" />
+    <File Path="Readme.md" />
+  </Folder>
 </Solution>

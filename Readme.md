@@ -1,3 +1,8 @@
+bash
+./launch.sh up
+bash
+./launch.sh down
+
 docker compose -p translation-system --project-directory . -f backend/docker-compose.yml -f presentation/docker-compose.frontend.yml up --build
 
 docker compose run --rm backend dotnet ef database update
