@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/backend/">
+    <Project Path="backend/Translation.Backend.csproj" />
+  </Folder>
+  <Folder Name="/presentation/">
+    <Project Path="presentation/Translation.Presentation.phpproj" Type="13b669be-bb05-4ddf-9536-439f39a36129" />
+  </Folder>
+</Solution>

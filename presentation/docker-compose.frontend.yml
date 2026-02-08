@@ -1,0 +1,17 @@
+services:
+  php-ui:
+    build:
+      # This ensures the PHP Dockerfile is used
+      context: ./presentation
+      dockerfile: Dockerfile
+    container_name: translation-ui
+    restart: always
+    environment:
+      - BACKEND_INTERNAL_URL=http://backend:8080
+      - BACKEND_BROWSER_URL=http://localhost:8080
+    ports:
+      - "8000:80"
+    volumes:
+      # This ensures the PHP files are mounted
+      - ./presentation:/var/www/html
+

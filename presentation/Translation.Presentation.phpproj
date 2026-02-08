@@ -1,0 +1,26 @@
+<Project Sdk="Devsense.Php.Sdk">
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>f53ff009-7ccb-ba8c-d30a-3bf569656880</ProjectGuid>
+  </PropertyGroup>
+  <PropertyGroup>
+    <EnvName>Custom</EnvName>
+    <RuntimeVersion>7.3</RuntimeVersion>
+    <RootNamespace>translation\presentation</RootNamespace>
+    <WebRoot />
+    <SaveServerSettingsInUserFile>false</SaveServerSettingsInUserFile>
+    <PHPDevHostName>localhost</PHPDevHostName>
+    <PHPDevAutoPort>true</PHPDevAutoPort>
+    <PHPDevRouting />
+    <CustomXdebugPort>9003</CustomXdebugPort>
+    <DebugMappingMethod>Manual</DebugMappingMethod>
+    <DebugPathMapping>/var/www/html;C:\solutions\TranslationTool\presentation</DebugPathMapping>
+    <DBGpProxyEnabled>false</DBGpProxyEnabled>
+    <DBGpProxyHost />
+    <DBGpProxyPort>9001</DBGpProxyPort>
+    <IdeKey>19B15C8</IdeKey>
+    <CustomServerUrl>http://localhost:8000/</CustomServerUrl>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="Dockerfile" />
+  </ItemGroup>
+</Project>
