@@ -26,4 +26,8 @@
     <PackageReference Include="OpenIddict.Server.AspNetCore" Version="7.2.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Translation.Infrastructure\Translation.Infrastructure.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -2,111 +2,99 @@
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Server.AspNetCore;
 using OpenIddict.Validation.AspNetCore;
-using translation_app.Model;
-using translation_app.Models.TranslationTool.Model;
-using translation_app.Provider;
+using Translation.Domain.Entities;
+using Translation.Infrastructure.Repositories;
+using translation_app.Dto;
 
 namespace translation_app.Controllers
 {
+
     [ApiController]
     [Route("api/translations")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     public class TranslationController : ControllerBase
     {
-        private readonly ITranslationProvider _provider;
+        private readonly ITranslationRepository _repository;
         private readonly ILogger<TranslationController> _logger;
 
-        public TranslationController(ITranslationProvider provider, ILogger<TranslationController> logger)
+        public TranslationController(ITranslationRepository repository, ILogger<TranslationController> logger)
         {
-            _provider = provider;
+            _repository = repository;
             _logger = logger;
         }
 
-        // 1. List all SIDs
+        // 1. List all SIDs (Returns a simple string list)
         [HttpGet]
-        public async Task<IActionResult> List()
+        public async Task<ActionResult<IEnumerable<string>>> List()
         {
-            try
-            {
-                var sids = await _provider.GetAllSidsAsync();
-                return Ok(sids);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error fetching SID list");
-                return StatusCode(500, "Internal server error occurred while fetching SIDs.");
-            }
+            var sids = await _repository.GetAllSidsAsync();
+            return Ok(sids);
         }
 
+        // Get Resource (Mapped to DTO)
         [HttpGet("{sid}")]
-        public async Task<ActionResult<TextResource>> Get(string sid) 
+        public async Task<ActionResult<TextResourceResponse>> Get(string sid)
         {
-            var resource = await _provider.GetDetailsAsync(sid);
+            var resource = await _repository.GetBySidAsync(sid);
+            if (resource == null) return NotFound();
 
-            if (resource == null)
-            {
-                return NotFound();
-            }
+            // Manual mapping from Entity to DTO
+            var response = MapToDto(resource);
 
-            return Ok(resource); 
+            return Ok(response);
         }
 
-        // 3. Create a new SID
+        // Create Resource
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateRequest req)
+        public async Task<ActionResult<TextResourceResponse>> Create([FromBody] CreateTranslationRequest req)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            var existing = await _repository.GetBySidAsync(req.Sid);
+            if (existing != null) return Conflict(new { message = "SID already exists" });
 
-            try
-            {
-                await _provider.CreateSidAsync(req.Sid, req.DefaultText);
-                return CreatedAtAction(nameof(Get), new { sid = req.Sid }, req);
-            }
-            catch (InvalidOperationException ex) 
-            {
-                return Conflict(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating SID: {Sid}", req.Sid);
-                return StatusCode(500, "Failed to create new translation resource.");
-            }
+            // Domain Logic: Create via Constructor
+            var resource = new TextResourceEntity(req.Sid);
+            resource.AddOrUpdateTranslation("default", req.DefaultText);
+
+            await _repository.AddAsync(resource);
+            await _repository.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(Get), new { sid = resource.Sid }, MapToDto(resource));
         }
 
-        // 4. Update translation
+        // Update/Add Translation
         [HttpPut("{sid}/{langId}")]
-        public async Task<IActionResult> Update(string sid, string langId, [FromBody] string text)
+        public async Task<IActionResult> Update(string sid, string langId, [FromBody] UpdateTranslationRequest req)
         {
-            try
-            {
-                await _provider.UpdateTranslationAsync(sid, langId, text);
-                return NoContent();
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating {LangId} for {Sid}", langId, sid);
-                return StatusCode(500, "Update failed.");
-            }
+            var resource = await _repository.GetBySidAsync(sid);
+            if (resource == null) return NotFound();
+
+            // Domain Logic: Encapsulated update
+            resource.AddOrUpdateTranslation(langId, req.Text);
+
+            await _repository.SaveChangesAsync();
+            return NoContent();
         }
 
-        // 5. Delete SID
+        // Delete
         [HttpDelete("{sid}")]
         public async Task<IActionResult> Delete(string sid)
         {
-            try
-            {
-                await _provider.DeleteSidAsync(sid);
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error deleting SID: {Sid}", sid);
-                return StatusCode(500, "Deletion failed.");
-            }
+            var resource = await _repository.GetBySidAsync(sid);
+            if (resource == null) return NotFound();
+
+            _repository.DeleteBySidAsync(resource.Sid);
+            await _repository.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        // --- Private Helper for Mapping ---
+        private static TextResourceResponse MapToDto(TextResourceEntity entity)
+        {
+            return new TextResourceResponse(
+                entity.Sid,
+                entity.Translations.Select(t => new TranslationResponse(t.LangId, t.Text))
+            );
         }
     }
 
