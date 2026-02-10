@@ -15,4 +15,6 @@ Route::middleware(['auth.oidc'])->group(function () {
     Route::get('/translation/edit/{sid}', [TranslationController::class, 'edit'])->name('edit');
     Route::post('/translation/edit/{sid}', [TranslationController::class, 'update'])->name('update');
     Route::delete('/translation/delete/{sid}', [TranslationController::class, 'destroy'])->name('delete');
+    Route::get('/translation/add', [TranslationController::class, 'create'])->name('translations.create');
+    Route::post('/translations/add', [TranslationController::class, 'store'])->name('translations.store');
 });

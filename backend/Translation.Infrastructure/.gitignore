@@ -1,0 +1,25 @@
+# IDE - VS Code & Visual Studio
+.vscode/
+.vs/
+*.user
+*.userosscache
+*.sln.doccache
+
+# Build outputs
+bin/
+obj/
+publish/
+
+# Secrets & Local Config
+appsettings.Development.json
+appsettings.Local.json
+*.pem
+*.pfx
+
+# EF Core / OpenIddict Dev Certs
+dev-certs/
+temp-keys/
+
+# OS specific
+.DS_Store
+thumbs.db

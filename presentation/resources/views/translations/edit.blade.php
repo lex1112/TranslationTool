@@ -1,33 +1,35 @@
-<!-- edit.blade.php -->
+<!-- resources/views/translations/edit.blade.php -->
+
 <h1>Edit SID: {{ $details['sid'] }}</h1>
 
+<!-- 1. System Default Display -->
 <p>
     <strong>System-default (en-US):</strong><br>
     <input type="text" value="{{ $defaultText }}" readonly style="width: 100%; background: #eee;">
 </p>
 
-<!-- Language Selector (Refreshes page to load specific translation) -->
+<!-- 2. Language Selector -->
 <form method="GET" action="{{ route('edit', $details['sid']) }}">
     <label>Select language to edit:</label>
     <select name="edit_lang" onchange="this.form.submit()">
-        <option value="en-US" {{ $editLang == 'en-US' ? 'selected' : '' }}>en-US</option>
-        <option value="de-DE" {{ $editLang == 'de-DE' ? 'selected' : '' }}>de-DE</option>
-        <option value="fr-FR" {{ $editLang == 'fr-FR' ? 'selected' : '' }}>fr-FR</option>
+        @foreach($availableLanguages as $langId)
+            <option value="{{ $langId }}" {{ $editLang == $langId ? 'selected' : '' }}>
+                {{ $langId }}
+            </option>
+        @endforeach
     </select>
 </form>
 
 <hr>
 
-<!-- Update Form -->
+<!-- 3. Update Form -->
 <form action="{{ route('update', $details['sid']) }}" method="POST">
     @csrf
-    <!-- IMPORTANT: If your .NET API expects PUT, keep this. If POST, remove it. -->
-    @method('POST') 
-    
+    <!-- langId tells .NET which translation to update -->
     <input type="hidden" name="langId" value="{{ $editLang }}">
 
     <div>
-        <label>Translation Text:</label><br>
+        <label>Translation Text ({{ $editLang }}):</label><br>
         <textarea name="text" rows="5" style="width: 100%">{{ $currentText }}</textarea>
     </div>
 
@@ -39,10 +41,9 @@
 
 <hr>
 
-<!-- Delete Form -->
-<form action="{{ route('delete', $details['sid']) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this SID and ALL translations?')">
+<!-- 4. Delete SID (and all translations) -->
+<form action="{{ route('delete', $details['sid']) }}" method="POST" onsubmit="return confirm('Delete this SID?')">
     @csrf
     @method('DELETE')
-    <button type="submit" style="background: red; color: white;">Delete the SID</button>
+    <button type="submit" style="background: red; color: white;">Delete SID</button>
 </form>
-

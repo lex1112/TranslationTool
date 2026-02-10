@@ -7,61 +7,178 @@ use Illuminate\Support\Facades\Http;
 
 class TranslationController extends Controller
 {
+    /**
+     * Creates a pre-configured HTTP client with the Bearer token.
+     * Redirects to login if the token is missing from the session.
+     */
     private function api()
     {
-        return Http::withToken(session('api_token'))->baseUrl(env('BACKEND_INTERNAL_URL'));
+        $token = session('api_token');
+
+        if (!$token) {
+            // Immediate redirect if no token exists in the current session
+            abort(redirect()->route('login')->withErrors('Unauthorized. Please login again.'));
+        }
+
+        return Http::withToken($token)
+            ->baseUrl(env('BACKEND_INTERNAL_URL'))
+            ->timeout(10) // Prevents the script from hanging if .NET is unresponsive
+            ->acceptJson();
+    }
+
+    /**
+     * Centralized request wrapper to handle API responses and Token validation.
+     * Detects 401 (Expired Token) and handles server-side errors.
+     */
+    private function request($method, $url, $data = [])
+    {
+        try {
+            $response = $this->api()->$method($url, $data);
+
+            // 401 Unauthorized: The OpenIddict token has expired or is invalid
+            if ($response->status() === 401) {
+                session()->forget('api_token'); // Clear the "dead" token
+                abort(redirect()->route('login')->withErrors('Your session has expired. Please login again.'));
+            }
+
+            // Handle 4xx and 5xx errors from the .NET backend
+            if ($response->failed()) {
+                $error = $response->json()['error'] ?? $response->json()['message'] ?? 'Backend server error';
+                throw new \Exception($error);
+            }
+
+            return $response->json();
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            throw new \Exception('Unable to reach the backend server.');
+        }
     }
 
     public function index(Request $request)
     {
-        $selectedLang = $request->get('lang', 'en-US');
+        try {
+            $selectedLang = $request->get('lang', 'en-US');
 
-        // 1. Get all SIDs from .Net
+            // Fetch detailed resources from the .NET API
+            $resources = $this->request('get', '/api/translations');
 
-        $response = $this->api()->get('/api/translations');
+            // Extract unique language IDs for the filter dropdown
+            $availableLanguages = collect($resources)
+                ->pluck('translations')
+                ->flatten(1)
+                ->pluck('langId')
+                ->unique()
+                ->values();
 
-        $sids =$response->json();
+            // Format data for the view with fallback logic
+            $tableData = collect($resources)->map(function ($item) use ($selectedLang) {
+                $translations = collect($item['translations']);
 
-        $tableData = [];
- 
-        foreach (($sids ?? []) as $sid) {
-            // 2. Get details for each SID
-            $details = $this->api()->get("/api/translations/{$sid}")->json();
-            $translations = collect($details['translations']);
+                // Logic: Target Lang -> Fallback en-US -> Fallback string
+                $text = $translations->where('langId', $selectedLang)->first()['text']
+                    ?? $translations->where('langId', 'en-US')->first()['text']
+                    ?? '---';
 
-            // 3. Logic: Target Lang -> Fallback to en-US -> Fallback to 'default'
-            $text = $translations->where('langId', $selectedLang)->first()['text']
-                ?? $translations->where('langId', 'en-US')->first()['text']
-                ?? $translations->where('langId', 'default')->first()['text']
-                ?? '---';
+                return [
+                    'sid' => $item['sid'],
+                    'text' => $text
+                ];
+            });
 
-            $tableData[] = ['sid' => $sid, 'text' => $text];
+            return view('translations.index', compact('tableData', 'selectedLang', 'availableLanguages'));
+        } catch (\Exception $e) {
+            return back()->withErrors($e->getMessage());
         }
-
-        return view('translations.index', compact('tableData', 'selectedLang'));
     }
 
     public function edit($sid, Request $request)
     {
-        $details = $this->api()->get("/api/translations/{$sid}")->json();
-        $editLang = $request->get('edit_lang', 'en-US');
+        try {
+            $editLang = $request->get('edit_lang', 'en-US');
 
-        $defaultText = collect($details['translations'])->where('langId', 'en-US')->first()['text'] ?? 'N/A';
-        $currentText = collect($details['translations'])->where('langId', $editLang)->first()['text'] ?? '';
+            // Fetch specific resource and all translations (to get lang list)
+            $details = $this->request('get', "/api/translations/{$sid}");
+            $allResources = $this->request('get', '/api/translations');
 
-        return view('translations.edit', compact('details', 'defaultText', 'currentText', 'editLang'));
+            $availableLanguages = collect($allResources)
+                ->pluck('translations')
+                ->flatten(1)
+                ->pluck('langId')
+                ->unique()
+                ->values();
+
+            $translations = collect($details['translations'] ?? []);
+            $defaultText = $translations->where('langId', 'en-US')->first()['text'] ?? 'N/A';
+            $currentText = $translations->where('langId', $editLang)->first()['text'] ?? '';
+
+            return view('translations.edit', compact(
+                'details',
+                'defaultText',
+                'currentText',
+                'editLang',
+                'availableLanguages'
+            ));
+        } catch (\Exception $e) {
+            return redirect()->route('index')->withErrors($e->getMessage());
+        }
     }
 
     public function update(Request $request, $sid)
     {
-        $this->api()->put("/api/translations/{$sid}/{$request->langId}", $request->text);
-        return redirect()->route('index');
+        $request->validate([
+            'langId' => 'required|string',
+            'text' => 'required|string',
+        ]);
+
+        try {
+            // Update the translation in the .NET database
+            $this->request('put', "/api/translations/{$sid}/{$request->langId}", [
+                'text' => $request->text,
+            ]);
+
+            return redirect()->route('index')->with('success', 'Translation updated successfully');
+        } catch (\Exception $e) {
+            return back()->withInput()->withErrors($e->getMessage());
+        }
+    }
+
+    public function create()
+    {
+        return view('translations.create');
+    }
+
+    public function store(Request $request)
+    {
+        // 1. Validate the form input
+        $request->validate([
+            'sid' => 'required|string|max:255',
+            'defaultText' => 'required|string',
+        ]);
+
+        try {
+            // 2. Call the .NET POST /api/translations endpoint
+            // This matches your .NET CreateRequest { sid, defaultText }
+            $this->request('post', '/api/translations', [
+                'sid' => $request->sid,
+                'defaultText' => $request->defaultText,
+            ]);
+
+            return redirect()->route('index')->with('success', 'New SID created successfully');
+        } catch (\Exception $e) {
+            // If .NET returns a 409 Conflict (SID exists), this catches it
+            return back()->withInput()->withErrors($e->getMessage());
+        }
     }
 
     public function destroy($sid)
     {
-        $this->api()->delete("/api/translations/{$sid}");
-        return redirect()->route('index');
+        try {
+            $this->request('delete', "/api/translations/{$sid}");
+            return redirect()->route('index')->with('success', 'Resource deleted successfully');
+        } catch (\Exception $e) {
+            return back()->withErrors($e->getMessage());
+        }
     }
 }
+
+
 

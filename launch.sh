@@ -1,21 +1,21 @@
 #!/bin/bash
 
-# Определение общих путей
-PROJECT_NAME="translation-system"
-BACKEND="backend/docker-compose.yml"
-FRONTEND="presentation/docker-compose.frontend.yml"
+# Configuration
+BACKEND="docker-compose.backend.yml"
+FRONTEND="docker-compose.frontend.yml"
+# Merging files into a single command variable
+COMPOSE_CMD="docker compose -f $BACKEND -f $FRONTEND"
 
-# Функция для запуска (аналог up: в Makefile)
 up() {
-    docker compose -p $PROJECT_NAME --project-directory . -f $BACKEND -f $FRONTEND up --build
+    echo "--- Building and starting containers ---"
+    $COMPOSE_CMD up --build
 }
 
-# Функция для остановки (аналог down: в Makefile)
 down() {
-    docker compose -p $PROJECT_NAME -f $BACKEND -f $FRONTEND down
+    echo "--- Stopping and removing containers ---"
+    $COMPOSE_CMD down
 }
 
-# Логика выбора команды
 case "$1" in
     up)
         up
