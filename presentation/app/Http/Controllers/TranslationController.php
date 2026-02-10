@@ -33,25 +33,33 @@ class TranslationController extends Controller
     private function request($method, $url, $data = [])
     {
         try {
+            // 1. Execute the request via the api() helper
             $response = $this->api()->$method($url, $data);
 
-            // 401 Unauthorized: The OpenIddict token has expired or is invalid
+            // 2. ALWAYS check for 401 (Expired or Invalid Token)
             if ($response->status() === 401) {
-                session()->forget('api_token'); // Clear the "dead" token
-                abort(redirect()->route('login')->withErrors('Your session has expired. Please login again.'));
+                // Clear the stale token from Laravel session
+                session()->forget('api_token');
+
+                // Force redirect to login with a clear message
+                abort(redirect()->route('login')->withErrors('Your backend session has expired. Please log in again.'));
             }
 
-            // Handle 4xx and 5xx errors from the .NET backend
+            // 3. Check for other backend failures (500, 403, 404)
             if ($response->failed()) {
-                $error = $response->json()['error'] ?? $response->json()['message'] ?? 'Backend server error';
+                // Extract error message from .NET JSON or use a default
+                $error = $response->json()['message'] ?? 'The Translation Service returned an error.';
                 throw new \Exception($error);
             }
 
             return $response->json();
+
         } catch (\Illuminate\Http\Client\ConnectionException $e) {
-            throw new \Exception('Unable to reach the backend server.');
+            // Handle cases where the .NET Docker container is down
+            throw new \Exception('Unable to connect to the Translation Service. Is the backend running?');
         }
     }
+
 
     public function index(Request $request)
     {

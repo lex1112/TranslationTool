@@ -30,6 +30,8 @@ namespace translation_app.Controllers
 
         [HttpGet("~/connect/authorize")]
         [HttpPost("~/connect/authorize")]
+        [ProducesResponseType(StatusCodes.Status302Found)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [IgnoreAntiforgeryToken]
         public async Task<IActionResult> Authorize()
         {
@@ -64,6 +66,9 @@ namespace translation_app.Controllers
         }
 
         [HttpPost("~/connect/token")]
+        [Produces("application/json")]
+        [ProducesResponseType(typeof(OpenIddictResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(OpenIddictResponse), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Exchange()
         {
             var request = _oidcrovider.GetServerRequest();

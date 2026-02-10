@@ -1,22 +1,36 @@
+Translation Tool
+A translation management system featuring a .NET 10 Backend (DDD Architecture) with OpenIddict and a Laravel Frontend.
+
+🚀 How to Run
+Use the control script in your terminal (Git Bash or Linux) to manage the application lifecycle(use root folder):
+Start the Application
+Builds images and starts all services (PostgreSQL, .NET API, Laravel):
 bash
 ./launch.sh up
+
+Stop the Application
+Stops and removes all running containers:
 bash
 ./launch.sh down
+Use code with caution.
 
-docker compose -f docker-compose.backend.yml up --build
+🔐 Authentication
+Once the application is running, go to the frontend: http://localhost:8000
+Default Admin Credentials:
+Username: admin@test.com
+Password: Password123!
 
-docker compose -p translation-system --project-directory . -f backend/Translation.API/docker-compose.yml -f presentation/docker-compose.frontend.yml up --build
+🛠 API Testing (Swagger)
+Interactive API documentation and testing are available at:
+http://localhost:8080/swagger
 
-docker compose -f docker-compose.backend.yml -f docker-compose.frontend.yml up --build
-docker compose -f docker-compose.frontend.yml up --build
+How to test protected routes:
+Navigate to the Account section.
+Execute POST /api/account/login with the credentials above to establish a session.
+For Translation endpoints, click the Authorize button and provide your access_token.
 
-docker compose run --rm backend dotnet ef database update
-
-docker run -d --name translation-ui -p 8000:80 -v "${PWD}:/var/www/html" php-frontend
-docker build -t translation-ui .
-
-
-psql -U myuser -d translation_db
-\dt
-
-UPDATE "OpenIddictApplications" SET "RedirectUris" = '["http://localhost:8000/login/callback"]' WHERE "ClientId" = 'php-client';
+🧪 Unit Tests
+To execute the NUnit test suite, run the following command from the root directory:
+Run all tests
+bash
+dotnet test

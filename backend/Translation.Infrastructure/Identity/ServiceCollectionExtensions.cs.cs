@@ -45,6 +45,7 @@ public static class ServiceCollectionExtensions
             .AddCore(options => options.UseEntityFrameworkCore().UseDbContext<ApplicationDbContext>())
             .AddServer(options =>
             {
+                options.SetAccessTokenLifetime(TimeSpan.FromMinutes(2));
                 options.SetIssuer(new Uri("http://localhost:8080/"));
                 options.SetAuthorizationEndpointUris("/connect/authorize")
                        .SetTokenEndpointUris("/connect/token");
@@ -79,13 +80,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITextResourceRepository, TextResourceDbRepository>();
         services.AddHttpContextAccessor();
         services.AddScoped<IOidcProvider, OidcProvider>();
-        services.AddLogging(loggingBuilder =>
-        {
-            loggingBuilder.ClearProviders();
-            loggingBuilder.AddConsole(); 
-            loggingBuilder.AddDebug();  
-            loggingBuilder.SetMinimumLevel(LogLevel.Information);
-        });
 
         services.AddControllers();
 

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Server.AspNetCore;
 using OpenIddict.Validation.AspNetCore;
+using System.Net.Mime;
 using Translation.Domain.Entities;
 using Translation.Infrastructure.Repositories;
 using translation_app.Dto;
@@ -12,6 +13,7 @@ namespace translation_app.Controllers
     [ApiController]
     [Route("api/translations")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [Produces(MediaTypeNames.Application.Json)] 
     public class TranslationController : ControllerBase
     {
         private readonly ITextResourceRepository _repository;
@@ -23,6 +25,7 @@ namespace translation_app.Controllers
 
         // List all SIDs (Returns a simple string list)
         [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<TextResourceResponse>>> List()
         {
             var entities = await _repository.GetAllTextResource();
@@ -35,6 +38,8 @@ namespace translation_app.Controllers
 
         // Get Resource (Mapped to DTO)
         [HttpGet("{sid}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<TextResourceResponse>> Get(string sid)
         {
             var resource = await _repository.GetBySidAsync(sid);
@@ -48,6 +53,8 @@ namespace translation_app.Controllers
 
         // Create Resource
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<ActionResult<TextResourceResponse>> Create([FromBody] CreateTranslationRequest req)
         {
             var existing = await _repository.GetBySidAsync(req.Sid);
@@ -64,6 +71,8 @@ namespace translation_app.Controllers
 
         // Update/Add Translation
         [HttpPut("{sid}/{langId}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Update(string sid, string langId, [FromBody] UpdateTranslationRequest req)
         {
             var resource = await _repository.GetBySidAsync(sid);
@@ -78,6 +87,8 @@ namespace translation_app.Controllers
 
         // Delete
         [HttpDelete("{sid}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(string sid)
         {
             var resource = await _repository.GetBySidAsync(sid);
