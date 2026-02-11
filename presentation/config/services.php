@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'backend' => [
+        'internal_url'  => env('BACKEND_INTERNAL_URL', 'http://dotnet_backend:8080'),
+        'browser_url'   => env('BACKEND_BROWSER_URL', 'http://localhost:8080'),
+        'client_id'     => env('OIDC_CLIENT_ID', 'php-client'),
+        'client_secret' => env('OIDC_CLIENT_SECRET', 'secret-123'),
+        'redirect_uri'  => env('OIDC_REDIRECT_URI', 'http://localhost:8000/login/callback'),
+    ],
 ];
+

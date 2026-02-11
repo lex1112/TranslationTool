@@ -7,59 +7,51 @@ use Illuminate\Support\Facades\Http;
 
 class TranslationController extends Controller
 {
-    /**
-     * Creates a pre-configured HTTP client with the Bearer token.
-     * Redirects to login if the token is missing from the session.
-     */
     private function api()
     {
         $token = session('api_token');
 
         if (!$token) {
-            // Immediate redirect if no token exists in the current session
             abort(redirect()->route('login')->withErrors('Unauthorized. Please login again.'));
         }
 
+        // Use config() instead of env() for better performance and reliability
+        $baseUrl = config('services.backend.internal_url');
+
         return Http::withToken($token)
-            ->baseUrl(env('BACKEND_INTERNAL_URL'))
-            ->timeout(10) // Prevents the script from hanging if .NET is unresponsive
+            ->baseUrl($baseUrl)
+            ->timeout(10)
             ->acceptJson();
     }
 
     /**
-     * Centralized request wrapper to handle API responses and Token validation.
-     * Detects 401 (Expired Token) and handles server-side errors.
+     * Centralized request wrapper.
      */
     private function request($method, $url, $data = [])
     {
         try {
-            // 1. Execute the request via the api() helper
             $response = $this->api()->$method($url, $data);
 
-            // 2. ALWAYS check for 401 (Expired or Invalid Token)
             if ($response->status() === 401) {
-                // Clear the stale token from Laravel session
                 session()->forget('api_token');
-
-                // Force redirect to login with a clear message
-                abort(redirect()->route('login')->withErrors('Your backend session has expired. Please log in again.'));
+                abort(redirect()->route('login')->withErrors('Your session has expired.'));
             }
 
-            // 3. Check for other backend failures (500, 403, 404)
             if ($response->failed()) {
-                // Extract error message from .NET JSON or use a default
-                $error = $response->json()['message'] ?? 'The Translation Service returned an error.';
+                // Log detailed error for the developer
+                Log::warning("API Error at {$url}: " . $response->body());
+
+                $error = $response->json()['message'] ?? 'Backend server error';
                 throw new \Exception($error);
             }
 
             return $response->json();
 
         } catch (\Illuminate\Http\Client\ConnectionException $e) {
-            // Handle cases where the .NET Docker container is down
-            throw new \Exception('Unable to connect to the Translation Service. Is the backend running?');
+            Log::error("Connection failed to .NET Backend: " . $e->getMessage());
+            throw new \Exception('Translation Service is unreachable. Check Docker containers.');
         }
     }
-
 
     public function index(Request $request)
     {
