@@ -1,36 +1,57 @@
-Translation Tool
-A translation management system featuring a .NET 10 Backend (DDD Architecture) with OpenIddict and a Laravel Frontend.
+# 🌐 Translation Management Tool
 
-🚀 How to Run
-Use the control script in your terminal (Git Bash or Linux) to manage the application lifecycle(use root folder):
-Start the Application
-Builds images and starts all services (PostgreSQL, .NET API, Laravel):
-bash
+A professional translation management system built with a **.NET 10** DDD-backend and a **Laravel 11** frontend. 
+
+---
+
+## 🛠 Tech Stack
+- **Backend:** .NET 10, Entity Framework Core, OpenIddict (OIDC), PostgreSQL.
+- **Frontend:** Laravel 11, Blade Templates, Bootstrap/Custom CSS.
+- **Infrastructure:** Docker, Docker Compose.
+
+---
+
+## 🚀 Quick Start
+
+### 1. Prerequisites
+- [Docker Desktop](https://www.docker.com) installed and running.
+- A terminal (Git Bash, PowerShell, or Linux Terminal).
+
+### 2. Launch the Application
+Use the provided automation script to build and start the environment:
+```bash
+# Start all services
 ./launch.sh up
 
-Stop the Application
-Stops and removes all running containers:
-bash
+# Stop all services
 ./launch.sh down
-Use code with caution.
 
-🔐 Authentication
-Once the application is running, go to the frontend: http://localhost:8000
-Default Admin Credentials:
-Username: admin@test.com
-Password: Password123!
+## 🔐 Authentication
 
-🛠 API Testing (Swagger)
+Once the application is running, go to the frontend: [http://localhost:8000](http://localhost:8000)
+
+**Default Admin Credentials:**
+*   **Username:** `admin@test.com`
+*   **Password:** `Password123!`
+
+---
+
+## 🛠 API Testing (Swagger)
+
 Interactive API documentation and testing are available at:
-http://localhost:8080/swagger
+[http://localhost:8080/swagger](http://localhost:8080/swagger)
 
-How to test protected routes:
-Navigate to the Account section.
-Execute POST /api/account/login with the credentials above to establish a session.
-For Translation endpoints, click the Authorize button and provide your access_token.
+**How to test protected routes:**
+1.  Navigate to the **Account** section.
+2.  Execute `POST /api/account/login` with the credentials above to establish a session.
+3.  For **Translation** endpoints, click the **Authorize** button and provide your `access_token`.
 
-🧪 Unit Tests
-To execute the NUnit test suite, run the following command from the root directory:
-Run all tests
-bash
+---
+
+## 🧪 Unit Tests
+
+To execute the **NUnit** test suite, run the following command from the root directory:
+
+**Run all tests**
+```bash
 dotnet test
